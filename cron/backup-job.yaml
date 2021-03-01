@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pg-backup
+spec:
+  template:
+    spec:
+      containers:
+      - name: backup-client
+        image: ubuntu:20.04
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: psql-user
+              key: password
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: psql-user
+              key: username
+        - name: PGPASS
+          valueFrom:
+            secretKeyRef:
+              name: pgpass
+              key: pgpass
+        command: ["/bin/sh"]
+        args: 
+          - -c
+          - >-
+            echo $PGPASS > $HOME/.pgpass;
+            chmod 600 $HOME/.pgpass;
+            ls -al $HOME;
+            echo the postgres-user is ${POSTGRES_USER};
+            apt-get update; apt-get install -y postgresql-client-12;
+            /usr/lib/postgresql/12/bin/pg_dump -U $POSTGRES_USER -h postgres my-pg-db > ./pg-backup.bak;
+            pwd;
+            ls -al;
+            echo 'goodbye';
+      restartPolicy: Never
+  backoffLimit: 4
