@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-postgres-deployment
+  labels:
+    app: my-postgres
+spec:
+  selector:
+    matchLabels:
+      app: my-postgres
+  template:
+    metadata:
+      labels:
+        app: my-postgres
+    spec:
+      nodeSelector:
+        #kubernetes.io/hostname: "node0.k8s"
+        has-mount-dir: "yes"
+      containers:
+      - name: my-postgres
+        image: postgres:12-alpine
+        imagePullPolicy: "IfNotPresent"
+        ports:
+        - name: pg-port
+          containerPort: 5432
+        volumeMounts:
+        - mountPath: /var/lib/postgresql
+          name: pg-vol
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        env:
+        - name: POSTGRES_DB
+          value: my-pg-db
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: psql-user
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: psql-user
+              key: password
+          # maybe try to set PGDATA to /var/lib/postgresql/something
+          # in order to save data there
+      volumes:
+      - name: pg-vol
+        persistentVolumeClaim:
+          claimName: pg-pvc
+
